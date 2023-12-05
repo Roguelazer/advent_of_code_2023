@@ -148,7 +148,7 @@ impl Almanac {
             |(seeds, ranges)| {
                 let maps = ranges
                     .into_iter()
-                    .map(|((from, to), map): ((&str, &str), Vec<(u64, u64, u64)>)| {
+                    .map(|((from, to), map): ((&str, &str), Vec<_>)| {
                         ((from.to_string(), to.to_string()), RangeMap::from(map))
                     })
                     .collect::<BTreeMap<(String, String), RangeMap>>();
@@ -156,14 +156,12 @@ impl Almanac {
                 let mut graph = petgraph::graph::DiGraph::new();
                 let mut nodes = BTreeMap::new();
                 maps.keys().for_each(|(s, d)| {
-                    let source = nodes
+                    let source = *nodes
                         .entry(s.to_owned())
-                        .or_insert_with(|| graph.add_node(s.to_owned()))
-                        .clone();
-                    let dest = nodes
+                        .or_insert_with(|| graph.add_node(s.to_owned()));
+                    let dest = *nodes
                         .entry(d.to_owned())
-                        .or_insert_with(|| graph.add_node(d.to_owned()))
-                        .clone();
+                        .or_insert_with(|| graph.add_node(d.to_owned()));
                     graph.add_edge(source, dest, ());
                 });
                 let nodes_rev = nodes
@@ -183,10 +181,10 @@ impl Almanac {
     }
 
     fn location_for_seed(&self, seed: u64) -> u64 {
-        let finish_node = self.nodes["location"].clone();
+        let finish_node = self.nodes["location"];
         let path = astar(
             &self.graph,
-            self.nodes["seed"].clone(),
+            self.nodes["seed"],
             |finish| finish == finish_node,
             |_| 1,
             |_| 0,
@@ -206,10 +204,10 @@ impl Almanac {
     fn lowest_for_seed_range(&self, start: u64, length: u64) -> u64 {
         // we model this as a series of flows between segments, which may split or recombine
         let wavefrom = vec![(start, length)];
-        let finish_node = self.nodes["location"].clone();
+        let finish_node = self.nodes["location"];
         let path = astar(
             &self.graph,
-            self.nodes["seed"].clone(),
+            self.nodes["seed"],
             |finish| finish == finish_node,
             |_| 1,
             |_| 0,

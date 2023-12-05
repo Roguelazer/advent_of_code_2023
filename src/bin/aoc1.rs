@@ -59,7 +59,7 @@ fn find_next_digit(s: &[u8], direction: Direction) -> DigitResult {
             }
         }
     }
-    return DigitResult::AdvanceBy(1);
+    DigitResult::AdvanceBy(1)
 }
 
 fn find_digits_mode2(s: &str) -> (u8, u8) {
