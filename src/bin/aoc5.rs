@@ -39,38 +39,25 @@ struct RangeMap {
 }
 
 impl RangeMap {
-    fn traverse(&self, query: u64) -> u64 {
-        let pp = self.source_to_dest.partition_point(|v| v.start_id <= query);
-        if pp == 0 {
-            query
-        } else {
-            let segment = &self.source_to_dest[pp - 1];
-            segment.translate(query)
-        }
-    }
-
     // translate a contiguous range into one or more contiguous ranges of outputs
     fn translate_range(&self, mut start: u64, mut length: u64) -> Vec<(u64, u64)> {
         let mut output = Vec::new();
         let first = self.source_to_dest[0].start_id;
         while length > 0 {
             let pp = self.source_to_dest.partition_point(|v| v.start_id <= start);
-            if pp == 0 {
+            let (new_start, len) = if pp == 0 {
+                // we're before the first mapped segment
                 assert!(start < first);
                 let remaining_before_start = first - start;
                 let this_chunk_len = std::cmp::min(length, remaining_before_start);
-                output.push((start, this_chunk_len));
-                start += this_chunk_len;
-                length -= this_chunk_len;
+                (start, this_chunk_len)
             } else {
                 let segment = &self.source_to_dest[pp - 1];
                 if start < segment.end() {
                     // we're in the segment
                     let remaining = segment.end() - start;
                     let this_chunk_len = std::cmp::min(length, remaining);
-                    output.push((segment.translate(start), this_chunk_len));
-                    start += this_chunk_len;
-                    length -= this_chunk_len;
+                    (segment.translate(start), this_chunk_len)
                 } else {
                     // we're outside the segment
                     let remaining = if pp == self.source_to_dest.len() {
@@ -80,11 +67,12 @@ impl RangeMap {
                         next.start_id - start
                     };
                     let this_chunk_len = std::cmp::min(length, remaining);
-                    output.push((start, this_chunk_len));
-                    start += this_chunk_len;
-                    length -= this_chunk_len;
+                    (start, this_chunk_len)
                 }
-            }
+            };
+            output.push((new_start, len));
+            start += len;
+            length -= len;
         }
         output
     }
@@ -180,7 +168,7 @@ impl Almanac {
         )(s)
     }
 
-    fn location_for_seed(&self, seed: u64) -> u64 {
+    fn seed_to_location_path(&self) -> Vec<NodeIndex> {
         let finish_node = self.nodes["location"];
         let path = astar(
             &self.graph,
@@ -189,45 +177,39 @@ impl Almanac {
             |_| 1,
             |_| 0,
         );
-        path.unwrap()
-            .1
+        path.unwrap().1
+    }
+
+    fn location_for_seed(&self, seed: u64) -> u64 {
+        self.seed_to_location_path()
             .into_iter()
             .tuple_windows()
             .fold(seed, |value, (from, to)| {
                 let from_name = self.nodes_rev[&from].clone();
                 let to_name = self.nodes_rev[&to].clone();
                 let map = &self.maps[&(from_name, to_name)];
-                map.traverse(value)
+                map.translate_range(value, 1)[0].0
             })
     }
 
     fn lowest_for_seed_range(&self, start: u64, length: u64) -> u64 {
         // we model this as a series of flows between segments, which may split or recombine
         let wavefrom = vec![(start, length)];
-        let finish_node = self.nodes["location"];
-        let path = astar(
-            &self.graph,
-            self.nodes["seed"],
-            |finish| finish == finish_node,
-            |_| 1,
-            |_| 0,
-        );
-        let final_wave =
-            path.unwrap()
-                .1
-                .into_iter()
-                .tuple_windows()
-                .fold(wavefrom, |wave, (from, to)| {
-                    let from_name = self.nodes_rev[&from].clone();
-                    let to_name = self.nodes_rev[&to].clone();
-                    let map = &self.maps[&(from_name, to_name)];
-                    // TODO: deduplicate wavefronts? theoretically we could
-                    // get a combinatorial explosion here, but in practice we
-                    // don't seem to get more than 32 waves live at a time.
-                    wave.into_iter()
-                        .flat_map(|(start, length)| map.translate_range(start, length))
-                        .collect::<Vec<_>>()
-                });
+        let final_wave = self
+            .seed_to_location_path()
+            .into_iter()
+            .tuple_windows()
+            .fold(wavefrom, |wave, (from, to)| {
+                let from_name = self.nodes_rev[&from].clone();
+                let to_name = self.nodes_rev[&to].clone();
+                let map = &self.maps[&(from_name, to_name)];
+                // TODO: deduplicate wavefronts? theoretically we could
+                // get a combinatorial explosion here, but in practice we
+                // don't seem to get more than 32 waves live at a time.
+                wave.into_iter()
+                    .flat_map(|(start, length)| map.translate_range(start, length))
+                    .collect::<Vec<_>>()
+            });
         assert!(final_wave.iter().map(|(_, l)| *l).sum::<u64>() == length);
         final_wave.into_iter().map(|(s, _)| s).min().unwrap()
     }
