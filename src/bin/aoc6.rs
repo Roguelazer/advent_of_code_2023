@@ -14,13 +14,12 @@ struct Race {
 }
 
 impl Race {
-    fn winning_times(&self) -> impl Iterator<Item = u64> {
-        let total_time = self.time;
-        let target = self.distance;
-        (0..self.time).filter(move |hold_time| {
-            let achieved = hold_time * (total_time - hold_time);
-            achieved > target
-        })
+    fn num_winning_times(&self) -> u64 {
+        let t = self.time as f64;
+        let d = (self.distance + 1) as f64;
+        let zero1 = (-1.0 * t + (t * t - 4.0 * d).sqrt()) / -2.0;
+        let zero2 = (-1.0 * t - (t * t - 4.0 * d).sqrt()) / -2.0;
+        (zero2.floor() - zero1.ceil() + 1.0) as u64
     }
 }
 
@@ -67,7 +66,7 @@ fn main() -> anyhow::Result<()> {
     let part1 = game
         .races
         .iter()
-        .map(|r| r.winning_times().count() as u64)
+        .map(|r| r.num_winning_times() as u64)
         .product::<u64>();
     println!("part 1: {}", part1);
     let mut time_acc = String::new();
@@ -80,7 +79,7 @@ fn main() -> anyhow::Result<()> {
         time: time_acc.parse::<u64>().unwrap(),
         distance: distance_acc.parse::<u64>().unwrap(),
     };
-    let part2 = race_part2.winning_times().count();
+    let part2 = race_part2.num_winning_times();
     println!("part 2: {}", part2);
     Ok(())
 }
