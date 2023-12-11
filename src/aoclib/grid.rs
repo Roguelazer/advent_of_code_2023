@@ -102,6 +102,99 @@ impl<V: Clone + fmt::Debug> DenseGrid<V> {
             Some(row + col)
         }
     }
+
+    pub fn rows<'a>(&'a self) -> Rows<'a, V> {
+        Rows {
+            grid: self,
+            y: self.min_y,
+        }
+    }
+
+    pub fn columns<'a>(&'a self) -> Columns<'a, V> {
+        Columns {
+            grid: self,
+            x: self.min_x,
+        }
+    }
+
+    pub fn iter<'a>(&'a self) -> Iter<'a, V> {
+        Iter {
+            grid: self,
+            x: self.min_x,
+            y: self.min_y,
+        }
+    }
+}
+
+pub struct Rows<'a, V: Clone + std::fmt::Debug> {
+    grid: &'a DenseGrid<V>,
+    y: Index,
+}
+
+impl<'a, V: Clone + std::fmt::Debug> Iterator for Rows<'a, V> {
+    type Item = Vec<V>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.y > self.grid.max_y {
+            return None;
+        }
+        let val = (self.grid.min_x..=self.grid.max_x)
+            .map(|x| {
+                let pt = Point::new(x, self.y);
+                self.grid.get(pt).unwrap()
+            })
+            .collect();
+        self.y += 1;
+        Some(val)
+    }
+}
+
+pub struct Columns<'a, V: Clone + std::fmt::Debug> {
+    grid: &'a DenseGrid<V>,
+    x: Index,
+}
+
+impl<'a, V: Clone + std::fmt::Debug> Iterator for Columns<'a, V> {
+    type Item = Vec<V>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.x > self.grid.max_x {
+            return None;
+        }
+        let val = (self.grid.min_y..=self.grid.max_y)
+            .map(|y| {
+                let pt = Point::new(self.x, y);
+                self.grid.get(pt).unwrap()
+            })
+            .collect();
+        self.x += 1;
+        Some(val)
+    }
+}
+
+pub struct Iter<'a, V: Clone + std::fmt::Debug> {
+    grid: &'a DenseGrid<V>,
+    x: Index,
+    y: Index,
+}
+
+impl<'a, V: Clone + std::fmt::Debug> Iterator for Iter<'a, V> {
+    type Item = (Point<Index>, V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.y > self.grid.max_y {
+            return None;
+        }
+        let pt = Point::new(self.x, self.y);
+        let value = self.grid.get(pt).unwrap();
+        if self.x >= self.grid.max_x {
+            self.x = 0;
+            self.y += 1;
+        } else {
+            self.x += 1;
+        }
+        Some((pt, value))
+    }
 }
 
 impl<V: Clone + std::fmt::Debug> std::ops::Index<Point<Index>> for DenseGrid<V> {
@@ -143,5 +236,23 @@ mod tests {
         g[Point { x: 50, y: 50 }] = 4;
         assert_eq!(g[Point { x: 49, y: 50 }], 0);
         assert_eq!(g[Point { x: 50, y: 50 }], 4);
+    }
+
+    #[test]
+    fn test_columns() {
+        let mut g = DenseGrid::new_with(Point { x: 0, y: 0 }, Point { x: 3, y: 3 }, 0u8);
+        g.set(Point::new(0, 0), 1);
+        g.set(Point::new(1, 1), 2);
+        g.set(Point::new(2, 2), 3);
+        g.set(Point::new(3, 3), 4);
+        assert_eq!(
+            g.columns().collect::<Vec<_>>(),
+            vec![
+                vec![1, 0, 0, 0],
+                vec![0, 2, 0, 0],
+                vec![0, 0, 3, 0],
+                vec![0, 0, 0, 4]
+            ]
+        );
     }
 }

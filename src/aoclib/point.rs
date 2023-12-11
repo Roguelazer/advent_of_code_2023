@@ -33,11 +33,8 @@ pub struct Point<I: DimVal = i64> {
 }
 
 impl<I: DimVal> Point<I> {
-    pub fn new<X: Into<I>, Y: Into<I>>(x: X, y: Y) -> Self {
-        Point {
-            x: x.into(),
-            y: y.into(),
-        }
+    pub fn new(x: I, y: I) -> Self {
+        Point { x: x, y: y }
     }
 
     pub fn transpose(&self) -> Self {
