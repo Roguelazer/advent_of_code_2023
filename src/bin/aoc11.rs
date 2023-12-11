@@ -3,21 +3,11 @@ use aoclib::Point;
 use itertools::Itertools;
 
 fn read_map(s: &str) -> DenseGrid<bool> {
-    let height = s.lines().count() as i64 - 1;
-    let width = s.lines().next().unwrap().chars().count() as i64 - 1;
-    let mut g = DenseGrid::new_with(Point::new(0, 0), Point::new(width, height), false);
-    for (y, row) in s.lines().enumerate() {
-        for (x, chr) in row.chars().enumerate() {
-            let coord = Point::new(x as i64, y as i64);
-            let value = match chr {
-                '.' => false,
-                '#' => true,
-                _ => panic!("what is {:?}", chr),
-            };
-            g.set(coord, value);
-        }
-    }
-    g
+    DenseGrid::from_input(s, |chr| match chr {
+        '.' => false,
+        '#' => true,
+        _ => panic!("what is {:?}", chr),
+    })
 }
 
 fn translate(

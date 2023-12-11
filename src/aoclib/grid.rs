@@ -9,6 +9,12 @@ pub trait HasEmpty {
     fn empty_value() -> Self;
 }
 
+impl<T: Default> HasEmpty for T {
+    fn empty_value() -> Self {
+        Self::default()
+    }
+}
+
 #[derive(Debug)]
 pub struct DenseGrid<V: Clone + fmt::Debug> {
     min_x: Index,
@@ -23,6 +29,27 @@ pub struct DenseGrid<V: Clone + fmt::Debug> {
 impl<V: Clone + fmt::Debug + HasEmpty> DenseGrid<V> {
     pub fn new(upper_left: Point<Index>, lower_right: Point<Index>) -> Self {
         Self::new_with(upper_left, lower_right, V::empty_value())
+    }
+
+    pub fn from_input<F>(input: &str, f: F) -> Self
+    where
+        F: Fn(char) -> V,
+    {
+        let height = input.lines().count() as i64 - 1;
+        let width = input.lines().next().unwrap().chars().count() as i64 - 1;
+        let mut g = Self::new_with(
+            Point::new(0, 0),
+            Point::new(width, height),
+            V::empty_value(),
+        );
+        for (y, row) in input.lines().enumerate() {
+            for (x, chr) in row.chars().enumerate() {
+                let coord = Point::new(x as i64, y as i64);
+                let value = f(chr);
+                g.set(coord, value);
+            }
+        }
+        g
     }
 }
 
@@ -43,6 +70,14 @@ impl<V: Clone + fmt::Debug> DenseGrid<V> {
             height,
             cells: vec![empty_value; width * height],
         }
+    }
+
+    pub fn row_numbers(&self) -> impl Iterator<Item = Index> {
+        self.min_y..=self.max_y
+    }
+
+    pub fn column_numbers(&self) -> impl Iterator<Item = Index> {
+        self.min_x..=self.max_x
     }
 
     pub fn width(&self) -> usize {
@@ -138,7 +173,9 @@ impl<'a, V: Clone + std::fmt::Debug> Iterator for Rows<'a, V> {
         if self.y > self.grid.max_y {
             return None;
         }
-        let val = (self.grid.min_x..=self.grid.max_x)
+        let val = self
+            .grid
+            .column_numbers()
             .map(|x| {
                 let pt = Point::new(x, self.y);
                 self.grid.get(pt).unwrap()
@@ -161,7 +198,9 @@ impl<'a, V: Clone + std::fmt::Debug> Iterator for Columns<'a, V> {
         if self.x > self.grid.max_x {
             return None;
         }
-        let val = (self.grid.min_y..=self.grid.max_y)
+        let val = self
+            .grid
+            .row_numbers()
             .map(|y| {
                 let pt = Point::new(self.x, y);
                 self.grid.get(pt).unwrap()
