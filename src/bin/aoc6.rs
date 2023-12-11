@@ -47,7 +47,7 @@ impl Match {
                 Match {
                     races: times
                         .into_iter()
-                        .zip(distances.into_iter())
+                        .zip(distances)
                         .map(|(time, distance)| Race { time, distance })
                         .collect(),
                 }
@@ -66,7 +66,7 @@ fn main() -> anyhow::Result<()> {
     let part1 = game
         .races
         .iter()
-        .map(|r| r.num_winning_times() as u64)
+        .map(|r| r.num_winning_times())
         .product::<u64>();
     println!("part 1: {}", part1);
     let mut time_acc = String::new();

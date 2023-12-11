@@ -101,14 +101,14 @@ impl HandType {
                 5 => HandType::FiveOfAKind,
                 4 => HandType::FourOfAKind,
                 3 => {
-                    if groups == &[2, 3] {
+                    if groups == [2, 3] {
                         HandType::FullHouse
                     } else {
                         HandType::ThreeOfAKind
                     }
                 }
                 2 => {
-                    if groups == &[2, 2] || groups == &[1, 2, 2] {
+                    if groups == [2, 2] || groups == [1, 2, 2] {
                         HandType::TwoPair
                     } else {
                         HandType::OnePair
@@ -128,7 +128,7 @@ impl HandType {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Ord)]
+#[derive(Debug, PartialEq, Eq)]
 struct Hand {
     cards: Vec<Card>,
     hand_type: HandType,
@@ -145,18 +145,23 @@ impl Hand {
 
 impl PartialOrd<Hand> for Hand {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Hand {
+    fn cmp(&self, other: &Self) -> Ordering {
         match self.hand_type.cmp(&other.hand_type) {
-            Ordering::Less => Some(Ordering::Less),
-            Ordering::Greater => Some(Ordering::Greater),
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
             Ordering::Equal => {
                 for (lhs, rhs) in self.cards.iter().zip(other.cards.iter()) {
-                    if lhs > rhs {
-                        return Some(Ordering::Greater);
-                    } else if lhs < rhs {
-                        return Some(Ordering::Less);
+                    match lhs.cmp(rhs) {
+                        Ordering::Equal => {}
+                        e => return e,
                     }
                 }
-                Some(Ordering::Equal)
+                Ordering::Equal
             }
         }
     }

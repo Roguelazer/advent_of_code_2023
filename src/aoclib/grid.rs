@@ -103,21 +103,21 @@ impl<V: Clone + fmt::Debug> DenseGrid<V> {
         }
     }
 
-    pub fn rows<'a>(&'a self) -> Rows<'a, V> {
+    pub fn rows(&self) -> Rows<V> {
         Rows {
             grid: self,
             y: self.min_y,
         }
     }
 
-    pub fn columns<'a>(&'a self) -> Columns<'a, V> {
+    pub fn columns(&self) -> Columns<V> {
         Columns {
             grid: self,
             x: self.min_x,
         }
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a, V> {
+    pub fn iter(&self) -> Iter<V> {
         Iter {
             grid: self,
             x: self.min_x,

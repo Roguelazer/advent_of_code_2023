@@ -34,7 +34,7 @@ pub struct Point<I: DimVal = i64> {
 
 impl<I: DimVal> Point<I> {
     pub fn new(x: I, y: I) -> Self {
-        Point { x: x, y: y }
+        Point { x, y }
     }
 
     pub fn transpose(&self) -> Self {

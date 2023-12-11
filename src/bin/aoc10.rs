@@ -166,8 +166,8 @@ impl PassabilityMap {
         }
         Self {
             inner: out,
-            width: width as i32,
-            height: height as i32,
+            width,
+            height,
         }
     }
 
