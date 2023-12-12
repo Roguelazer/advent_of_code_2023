@@ -1,6 +1,8 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 const MAX_GROUPS: usize = 32;
+
+type GroupType = u8;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 enum Spring {
@@ -34,21 +36,21 @@ fn s2i(ss: &[Spring]) -> u128 {
 #[derive(Debug, Clone)]
 struct Row {
     springs: Vec<Spring>,
-    groups: Vec<usize>,
+    groups: Vec<GroupType>,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 struct CacheKey {
-    springs: u128,
+    current_broken: GroupType,
     springs_len: usize,
-    groups: [usize; MAX_GROUPS],
-    current_broken: usize,
+    springs: u128,
+    groups: [GroupType; MAX_GROUPS],
 }
 
 impl CacheKey {
-    fn new(s: &[Spring], g: &[usize], current_broken: usize) -> Self {
+    fn new(s: &[Spring], g: &[GroupType], current_broken: GroupType) -> Self {
         assert!(g.len() < MAX_GROUPS);
-        let mut groups = [0usize; MAX_GROUPS];
+        let mut groups = [0; MAX_GROUPS];
         for (i, gp) in g.iter().enumerate() {
             groups[i] = *gp;
         }
@@ -65,7 +67,7 @@ impl Row {
     fn from_line(s: &str) -> Self {
         if let Some((first, rest)) = s.split_once(' ') {
             let springs = first.chars().map(Spring::from_char).collect();
-            let groups: Vec<usize> = rest.split(',').map(|w| w.parse().unwrap()).collect();
+            let groups = rest.split(',').map(|w| w.parse().unwrap()).collect();
             Row { springs, groups }
         } else {
             panic!("unhandled line {:?}", s);
@@ -74,10 +76,10 @@ impl Row {
 
     fn solutions_inner(
         &self,
-        dp: &mut HashMap<CacheKey, usize>,
+        dp: &mut BTreeMap<CacheKey, usize>,
         springs: &[Spring],
-        groups: &[usize],
-        current_broken: usize,
+        groups: &[GroupType],
+        current_broken: GroupType,
     ) -> usize {
         let key = CacheKey::new(springs, groups, current_broken);
         if let Some(found) = dp.get(&key) {
@@ -105,9 +107,9 @@ impl Row {
             Some((Spring::Unknown, _)) => {
                 let mut new_working = springs.to_vec();
                 new_working[0] = Spring::Working;
+                let working_count = self.solutions_inner(dp, &new_working, groups, current_broken);
                 let mut new_broken = springs.to_vec();
                 new_broken[0] = Spring::Broken;
-                let working_count = self.solutions_inner(dp, &new_working, groups, current_broken);
                 let broken_count = self.solutions_inner(dp, &new_broken, groups, current_broken);
                 working_count + broken_count
             }
@@ -124,7 +126,7 @@ impl Row {
     }
 
     fn num_solutions(&self) -> usize {
-        let mut cache = HashMap::new();
+        let mut cache = BTreeMap::new();
         self.solutions_inner(&mut cache, &self.springs, &self.groups, 0)
     }
 
