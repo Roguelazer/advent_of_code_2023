@@ -93,7 +93,7 @@ fn find_smudge_reflection(vals: &[u64]) -> Option<usize> {
 fn main() -> anyhow::Result<()> {
     let stdin = std::io::stdin();
     let input = std::io::read_to_string(stdin)?;
-    let as_ints = input
+    let parsed = input
         .split("\n\n")
         .map(|segment| {
             DenseGrid::from_input(segment, |f| match f {
@@ -107,21 +107,17 @@ fn main() -> anyhow::Result<()> {
             let row_ints = grid.rows().map(|r| rc2i(&r)).collect::<Vec<u64>>();
             (column_ints, row_ints)
         });
-    let part1: usize = as_ints
-        .clone()
+    let (part1, part2): (usize, usize) = parsed
         .map(|(column_ints, row_ints)| {
             let column_reflection = find_reflection(&column_ints);
             let row_reflection = find_reflection(&row_ints);
-            column_reflection.unwrap_or(0) + row_reflection.unwrap_or(0) * 100
+            let part1 = column_reflection.unwrap_or(0) + row_reflection.unwrap_or(0) * 100;
+            let part2 = find_smudge_reflection(&row_ints).unwrap_or(0) * 100
+                + find_smudge_reflection(&column_ints).unwrap_or(0);
+            (part1, part2)
         })
-        .sum();
-    println!("part 1: {}", part1);
-    let part2: usize = as_ints
-        .map(|(column_ints, row_ints)| {
-            find_smudge_reflection(&row_ints).unwrap_or(0) * 100
-                + find_smudge_reflection(&column_ints).unwrap_or(0)
-        })
-        .sum();
+        .fold((0usize, 0usize), |(a1, a2), (p1, p2)| (a1 + p1, a2 + p2));
+    println!("part 2: {}", part1);
     println!("part 2: {}", part2);
     Ok(())
 }
