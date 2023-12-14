@@ -15,7 +15,7 @@ impl<T: Default> HasEmpty for T {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DenseGrid<V: Clone + fmt::Debug> {
     min_x: Index,
     min_y: Index,
@@ -25,6 +25,31 @@ pub struct DenseGrid<V: Clone + fmt::Debug> {
     height: usize,
     cells: Vec<V>,
 }
+
+impl<V: Clone + fmt::Debug + std::hash::Hash> std::hash::Hash for DenseGrid<V> {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: std::hash::Hasher,
+    {
+        self.min_x.hash(state);
+        self.min_y.hash(state);
+        self.max_x.hash(state);
+        self.max_y.hash(state);
+        self.cells.hash(state);
+    }
+}
+
+impl<V: Clone + fmt::Debug + PartialEq> PartialEq for DenseGrid<V> {
+    fn eq(&self, other: &Self) -> bool {
+        self.min_x == other.min_x
+            && self.min_y == other.min_y
+            && self.max_x == other.max_x
+            && self.max_y == other.max_y
+            && self.cells == other.cells
+    }
+}
+
+impl<V: Clone + fmt::Debug + PartialEq + Eq> Eq for DenseGrid<V> {}
 
 impl<V: Clone + fmt::Debug + HasEmpty> DenseGrid<V> {
     pub fn new(upper_left: Point<Index>, lower_right: Point<Index>) -> Self {
