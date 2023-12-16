@@ -50,91 +50,95 @@ enum UpDown {
 }
 
 fn rotate(angle: UpDown, vector: Point) -> Point {
-    match (angle, vector.as_tuple()) {
-        (UpDown::Down, (1, 0)) => Point::new(0, 1),
-        (UpDown::Down, (0, 1)) => Point::new(1, 0),
-        (UpDown::Down, (-1, 0)) => Point::new(0, -1),
-        (UpDown::Down, (0, -1)) => Point::new(-1, 0),
-        (UpDown::Down, _) => unreachable!(),
-        (UpDown::Up, (1, 0)) => Point::new(0, -1),
-        (UpDown::Up, (0, 1)) => Point::new(-1, 0),
-        (UpDown::Up, (-1, 0)) => Point::new(0, 1),
-        (UpDown::Up, (0, -1)) => Point::new(1, 0),
-        (UpDown::Up, _) => unreachable!(),
+    match angle {
+        UpDown::Down => Point::new(vector.y, vector.x),
+        UpDown::Up => Point::new(-1 * vector.y, -1 * vector.x),
     }
 }
 
-fn energized(map: &DenseGrid<Tile>, beam: Beam, seen: &mut HashSet<Beam>) -> HashSet<Point> {
-    if seen.contains(&beam) {
-        return HashSet::new();
+fn energized(map: &DenseGrid<Tile>, beam: Beam) -> HashSet<Point> {
+    let mut beams = vec![beam];
+    let mut energized = HashSet::new();
+    let mut seen = HashSet::new();
+
+    while let Some(mut beam) = beams.pop() {
+        loop {
+            if seen.contains(&beam) {
+                break;
+            }
+            seen.insert(beam.clone());
+            let value = map.get(beam.coord);
+            if value.is_some() {
+                energized.insert(beam.coord);
+            }
+            match value {
+                Some(Tile::Empty) => beam = beam.advance(),
+                Some(Tile::MirrorDown) => {
+                    beam = Beam {
+                        coord: beam.coord,
+                        direction: rotate(UpDown::Down, beam.direction),
+                    }
+                    .advance();
+                }
+                Some(Tile::MirrorUp) => {
+                    beam = Beam {
+                        coord: beam.coord,
+                        direction: rotate(UpDown::Up, beam.direction),
+                    }
+                    .advance();
+                }
+                Some(Tile::VerticalSplitter) => {
+                    if beam.direction.y == 0 {
+                        let above = Beam {
+                            coord: beam.coord,
+                            direction: Point::new(0, 1),
+                        }
+                        .advance();
+                        let below = Beam {
+                            coord: beam.coord,
+                            direction: Point::new(0, -1),
+                        }
+                        .advance();
+                        beams.push(above);
+                        beams.push(below);
+                        break;
+                    } else {
+                        beam = beam.advance();
+                    }
+                }
+                Some(Tile::HorizontalSplitter) => {
+                    if beam.direction.x == 0 {
+                        let right = Beam {
+                            coord: beam.coord,
+                            direction: Point::new(1, 0),
+                        }
+                        .advance();
+                        let left = Beam {
+                            coord: beam.coord,
+                            direction: Point::new(-1, 0),
+                        }
+                        .advance();
+                        beams.push(left);
+                        beams.push(right);
+                        break;
+                    } else {
+                        beam = beam.advance()
+                    }
+                }
+                None => break,
+            };
+        }
     }
-    seen.insert(beam.clone());
-    let value = map.get(beam.coord);
-    let mut new = match value {
-        Some(Tile::Empty) => energized(map, beam.advance(), seen),
-        Some(Tile::MirrorDown) => {
-            let next = Beam {
-                coord: beam.coord,
-                direction: rotate(UpDown::Down, beam.direction),
-            };
-            energized(map, next.advance(), seen)
-        }
-        Some(Tile::MirrorUp) => {
-            let next = Beam {
-                coord: beam.coord,
-                direction: rotate(UpDown::Up, beam.direction),
-            };
-            energized(map, next.advance(), seen)
-        }
-        Some(Tile::VerticalSplitter) => {
-            if beam.direction.y == 0 {
-                let above = Beam {
-                    coord: beam.coord,
-                    direction: Point::new(0, 1),
-                };
-                let below = Beam {
-                    coord: beam.coord,
-                    direction: Point::new(0, -1),
-                };
-                let above = energized(map, above.advance(), seen);
-                let below = energized(map, below.advance(), seen);
-                above.union(&below).cloned().collect::<HashSet<Point>>()
-            } else {
-                energized(map, beam.advance(), seen)
-            }
-        }
-        Some(Tile::HorizontalSplitter) => {
-            if beam.direction.x == 0 {
-                let right = Beam {
-                    coord: beam.coord,
-                    direction: Point::new(1, 0),
-                };
-                let left = Beam {
-                    coord: beam.coord,
-                    direction: Point::new(-1, 0),
-                };
-                let right = energized(map, right.advance(), seen);
-                let left = energized(map, left.advance(), seen);
-                left.union(&right).cloned().collect::<HashSet<Point>>()
-            } else {
-                energized(map, beam.advance(), seen)
-            }
-        }
-        None => return HashSet::new(),
-    };
-    new.insert(beam.coord);
-    new
+    energized
 }
 
 fn part1(map: &DenseGrid<Tile>) -> usize {
-    let mut seen = HashSet::new();
     energized(
         map,
         Beam {
             coord: Point::new(0, 0),
             direction: Point::new(1, 0),
         },
-        &mut seen,
     )
     .len()
 }
@@ -169,10 +173,7 @@ fn starts(map: &DenseGrid<Tile>) -> Vec<Beam> {
 fn part2(map: &DenseGrid<Tile>) -> usize {
     starts(map)
         .into_iter()
-        .map(|b| {
-            let mut seen = HashSet::new();
-            energized(map, b, &mut seen).len()
-        })
+        .map(|b| energized(map, b).len())
         .max()
         .unwrap()
 }

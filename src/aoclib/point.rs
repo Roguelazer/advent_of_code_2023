@@ -1,9 +1,16 @@
 use std::cmp::Ordering;
 use std::fmt;
 
+pub enum Rotation {
+    CW,
+    CCW,
+    Mirror,
+}
+
 pub trait DimVal:
     num_traits::Signed
     + num_traits::ToPrimitive
+    + num_traits::identities::Zero
     + std::cmp::Ord
     + std::cmp::Eq
     + Clone
@@ -16,6 +23,7 @@ pub trait DimVal:
 impl<
         S: num_traits::Signed
             + num_traits::ToPrimitive
+            + num_traits::identities::Zero
             + std::cmp::Ord
             + std::cmp::Eq
             + Clone
@@ -53,6 +61,16 @@ impl<I: DimVal> Point<I> {
         ((self.x - other.x).abs() + (self.y - other.y).abs())
             .to_u64()
             .unwrap() as usize
+    }
+
+    pub fn rotate_by(&self, r: Rotation) -> Self {
+        assert!(self.x == I::zero() || self.y == I::zero());
+        let neg_one = I::zero() - I::one();
+        match r {
+            Rotation::Mirror => Point::new(neg_one * self.x, neg_one * self.y),
+            Rotation::CCW => Point::new(neg_one * self.y, self.x),
+            Rotation::CW => Point::new(self.y, neg_one * self.x),
+        }
     }
 }
 
@@ -138,7 +156,7 @@ impl<I: DimVal> Iterator for LineToIter<I> {
 
 #[cfg(test)]
 mod tests {
-    use super::Point;
+    use super::{Point, Rotation};
 
     #[test]
     fn transpose() {
@@ -170,5 +188,44 @@ mod tests {
         assert_eq!(points[0], Point::new(0, 0));
         assert_eq!(points[5], Point::new(5, 0));
         assert_eq!(points[10], Point::new(10, 0));
+    }
+
+    #[test]
+    fn test_rotate_by_cw() {
+        assert_eq!(Point::new(1, 0).rotate_by(Rotation::CW), Point::new(0, -1));
+        assert_eq!(Point::new(0, 1).rotate_by(Rotation::CW), Point::new(1, 0));
+        assert_eq!(Point::new(-1, 0).rotate_by(Rotation::CW), Point::new(0, 1));
+        assert_eq!(Point::new(0, -1).rotate_by(Rotation::CW), Point::new(-1, 0));
+    }
+
+    #[test]
+    fn test_rotate_by_ccw() {
+        assert_eq!(Point::new(1, 0).rotate_by(Rotation::CCW), Point::new(0, 1));
+        assert_eq!(Point::new(0, 1).rotate_by(Rotation::CCW), Point::new(-1, 0));
+        assert_eq!(
+            Point::new(-2, 0).rotate_by(Rotation::CCW),
+            Point::new(0, -2)
+        );
+        assert_eq!(Point::new(0, -1).rotate_by(Rotation::CCW), Point::new(1, 0));
+    }
+
+    #[test]
+    fn test_rotate_by_mirror() {
+        assert_eq!(
+            Point::new(1, 0).rotate_by(Rotation::Mirror),
+            Point::new(-1, 0)
+        );
+        assert_eq!(
+            Point::new(0, 1).rotate_by(Rotation::Mirror),
+            Point::new(0, -1)
+        );
+        assert_eq!(
+            Point::new(-2, 0).rotate_by(Rotation::Mirror),
+            Point::new(2, 0)
+        );
+        assert_eq!(
+            Point::new(0, -1).rotate_by(Rotation::Mirror),
+            Point::new(0, 1)
+        );
     }
 }
