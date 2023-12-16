@@ -37,6 +37,10 @@ impl<I: DimVal> Point<I> {
         Point { x, y }
     }
 
+    pub fn as_tuple(&self) -> (I, I) {
+        (self.x, self.y)
+    }
+
     pub fn transpose(&self) -> Self {
         Point::new(self.y, self.x)
     }
