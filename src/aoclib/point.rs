@@ -68,8 +68,8 @@ impl<I: DimVal> Point<I> {
         let neg_one = I::zero() - I::one();
         match r {
             Rotation::Mirror => Point::new(neg_one * self.x, neg_one * self.y),
-            Rotation::CCW => Point::new(neg_one * self.y, self.x),
-            Rotation::CW => Point::new(self.y, neg_one * self.x),
+            Rotation::CCW => Point::new(self.y, neg_one * self.x),
+            Rotation::CW => Point::new(neg_one * self.y, self.x),
         }
     }
 }
@@ -192,21 +192,21 @@ mod tests {
 
     #[test]
     fn test_rotate_by_cw() {
-        assert_eq!(Point::new(1, 0).rotate_by(Rotation::CW), Point::new(0, -1));
-        assert_eq!(Point::new(0, 1).rotate_by(Rotation::CW), Point::new(1, 0));
-        assert_eq!(Point::new(-1, 0).rotate_by(Rotation::CW), Point::new(0, 1));
-        assert_eq!(Point::new(0, -1).rotate_by(Rotation::CW), Point::new(-1, 0));
+        assert_eq!(Point::new(1, 0).rotate_by(Rotation::CW), Point::new(0, 1));
+        assert_eq!(Point::new(0, 1).rotate_by(Rotation::CW), Point::new(-1, 0));
+        assert_eq!(Point::new(-1, 0).rotate_by(Rotation::CW), Point::new(0, -1));
+        assert_eq!(Point::new(0, -1).rotate_by(Rotation::CW), Point::new(1, 0));
     }
 
     #[test]
     fn test_rotate_by_ccw() {
-        assert_eq!(Point::new(1, 0).rotate_by(Rotation::CCW), Point::new(0, 1));
-        assert_eq!(Point::new(0, 1).rotate_by(Rotation::CCW), Point::new(-1, 0));
+        assert_eq!(Point::new(1, 0).rotate_by(Rotation::CCW), Point::new(0, -1));
+        assert_eq!(Point::new(0, 1).rotate_by(Rotation::CCW), Point::new(1, 0));
+        assert_eq!(Point::new(-2, 0).rotate_by(Rotation::CCW), Point::new(0, 2));
         assert_eq!(
-            Point::new(-2, 0).rotate_by(Rotation::CCW),
-            Point::new(0, -2)
+            Point::new(0, -1).rotate_by(Rotation::CCW),
+            Point::new(-1, 0)
         );
-        assert_eq!(Point::new(0, -1).rotate_by(Rotation::CCW), Point::new(1, 0));
     }
 
     #[test]

@@ -17,10 +17,10 @@ impl<T: Default> HasEmpty for T {
 
 #[derive(Debug, Clone)]
 pub struct DenseGrid<V: Clone + fmt::Debug> {
-    min_x: Index,
-    min_y: Index,
-    max_x: Index,
-    max_y: Index,
+    pub min_x: Index,
+    pub min_y: Index,
+    pub max_x: Index,
+    pub max_y: Index,
     width: usize,
     height: usize,
     cells: Vec<V>,
