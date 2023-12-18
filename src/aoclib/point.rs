@@ -91,13 +91,24 @@ impl<I: DimVal> std::ops::Add for Point<I> {
     }
 }
 
+impl<I: DimVal> std::ops::Sub for Point<I> {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Point {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}
+
 impl<I: DimVal> std::ops::Mul<I> for Point<I> {
     type Output = Self;
 
     fn mul(self, other: I) -> Self {
         Point {
             x: self.x * other,
-            y: self.y + other,
+            y: self.y * other,
         }
     }
 }

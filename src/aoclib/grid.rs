@@ -97,6 +97,10 @@ impl<V: Clone + fmt::Debug> DenseGrid<V> {
         }
     }
 
+    pub fn origin(&self) -> Point {
+        Point::new(self.min_x, self.min_y)
+    }
+
     pub fn row_numbers(&self) -> impl Iterator<Item = Index> {
         self.min_y..=self.max_y
     }
@@ -252,7 +256,7 @@ impl<'a, V: Clone + std::fmt::Debug> Iterator for Iter<'a, V> {
         let pt = Point::new(self.x, self.y);
         let value = self.grid.get(pt).unwrap();
         if self.x >= self.grid.max_x {
-            self.x = 0;
+            self.x = self.grid.min_x;
             self.y += 1;
         } else {
             self.x += 1;
@@ -260,6 +264,8 @@ impl<'a, V: Clone + std::fmt::Debug> Iterator for Iter<'a, V> {
         Some((pt, value))
     }
 }
+
+impl<'a, V: Clone + std::fmt::Debug> std::iter::FusedIterator for Iter<'a, V> {}
 
 impl<V: Clone + std::fmt::Debug> std::ops::Index<Point<Index>> for DenseGrid<V> {
     type Output = V;
