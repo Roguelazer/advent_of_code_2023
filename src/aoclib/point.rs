@@ -41,7 +41,7 @@ pub struct Point<I: DimVal = i64> {
 }
 
 impl<I: DimVal> Point<I> {
-    pub fn new(x: I, y: I) -> Self {
+    pub const fn new(x: I, y: I) -> Self {
         Point { x, y }
     }
 

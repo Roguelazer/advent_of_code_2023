@@ -19,6 +19,8 @@ image = "0.24.7"
 itertools = "0.12"
 log = { version = "0.4", features = ["release_max_level_info"] }
 lru-cache = "0.1.2"
+ndarray = "0.15.6"
+ndarray-linalg = { version = "0.16.0", features = ["openblas-system"] }
 nom = "7.1"
 nonempty = { version = "0.9", features = ["serde"] }
 num = "0.4.1"

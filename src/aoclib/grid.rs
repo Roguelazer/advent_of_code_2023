@@ -97,6 +97,21 @@ impl<V: Clone + fmt::Debug> DenseGrid<V> {
         }
     }
 
+    pub fn new_with_dimensions_from<T: Clone + fmt::Debug>(
+        g: &DenseGrid<T>,
+        empty_value: V,
+    ) -> Self {
+        Self {
+            min_x: g.min_x,
+            max_x: g.max_x,
+            min_y: g.min_y,
+            max_y: g.max_y,
+            width: g.width,
+            height: g.height,
+            cells: vec![empty_value; g.width * g.height],
+        }
+    }
+
     pub fn origin(&self) -> Point {
         Point::new(self.min_x, self.min_y)
     }
@@ -151,6 +166,24 @@ impl<V: Clone + fmt::Debug> DenseGrid<V> {
                 .collect::<String>();
             println!("{}", cells);
         }
+    }
+
+    pub fn save_to_image<F: Fn(&V) -> image::Rgb<u8>, P: AsRef<std::path::Path>>(
+        &self,
+        f: F,
+        path: P,
+    ) -> anyhow::Result<()> {
+        let mut image = image::ImageBuffer::from_pixel(
+            self.width() as u32,
+            self.height() as u32,
+            image::Rgb([255, 255, 255]),
+        );
+        for (point, value) in self.iter() {
+            let point = point - self.origin();
+            image.put_pixel(point.x as u32, point.y as u32, f(&value));
+        }
+        image.save(path.as_ref())?;
+        Ok(())
     }
 
     fn index_for(&self, coordinate: Point<Index>) -> Option<usize> {
