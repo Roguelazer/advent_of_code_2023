@@ -1,3 +1,4 @@
+mod dimval;
 mod grid;
 mod point;
 mod vec3;

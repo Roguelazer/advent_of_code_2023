@@ -1,23 +1,31 @@
+use crate::dimval::DimVal;
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Vec3 {
-    pub x: i64,
-    pub y: i64,
-    pub z: i64,
+#[derive(Debug, Clone, Copy, PartialEq, Hash, PartialOrd)]
+pub struct Vec3<T: DimVal = i64> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+}
+impl<I: DimVal + Eq> Eq for Vec3<I> {}
+
+impl<I: DimVal + Ord> Ord for Vec3<I> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap()
+    }
 }
 
-impl Vec3 {
-    pub fn new(x: i64, y: i64, z: i64) -> Self {
+impl<T: DimVal> Vec3<T> {
+    pub fn new(x: T, y: T, z: T) -> Self {
         Self { x, y, z }
     }
 }
 
-impl std::ops::Add for Vec3 {
-    type Output = Vec3;
+impl<T: DimVal + std::ops::Add> std::ops::Add for Vec3<T> {
+    type Output = Vec3<T>;
 
-    fn add(self, rhs: Vec3) -> Vec3 {
-        Vec3 {
+    fn add(self, rhs: Vec3<T>) -> Self::Output {
+        Self::Output {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
             z: self.z + rhs.z,
@@ -25,7 +33,7 @@ impl std::ops::Add for Vec3 {
     }
 }
 
-impl std::ops::AddAssign for Vec3 {
+impl<T: DimVal + std::ops::AddAssign> std::ops::AddAssign for Vec3<T> {
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
@@ -33,10 +41,10 @@ impl std::ops::AddAssign for Vec3 {
     }
 }
 
-impl std::ops::Sub for Vec3 {
-    type Output = Vec3;
+impl<T: DimVal + std::ops::Sub> std::ops::Sub for Vec3<T> {
+    type Output = Vec3<T>;
 
-    fn sub(self, rhs: Vec3) -> Vec3 {
+    fn sub(self, rhs: Vec3<T>) -> Self::Output {
         Vec3 {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
@@ -45,11 +53,11 @@ impl std::ops::Sub for Vec3 {
     }
 }
 
-impl std::ops::Mul<i64> for Vec3 {
-    type Output = Vec3;
+impl<T: DimVal + std::ops::Mul<i64, Output = T>> std::ops::Mul<i64> for Vec3<T> {
+    type Output = Vec3<T>;
 
-    fn mul(self, scalar: i64) -> Vec3 {
-        Vec3 {
+    fn mul(self, scalar: i64) -> Self::Output {
+        Self::Output {
             x: self.x * scalar,
             y: self.y * scalar,
             z: self.z * scalar,

@@ -27,6 +27,7 @@ impl<'a> Command<'a> {
         }
     }
 
+    #[allow(dead_code)]
     fn label(&self) -> &str {
         match self {
             Command::Assign(s, _) => s,

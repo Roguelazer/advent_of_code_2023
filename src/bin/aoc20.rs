@@ -6,7 +6,7 @@ use nom::multi::separated_list1;
 use nom::sequence::{preceded, separated_pair};
 use nom::IResult;
 use petgraph::graph::DiGraph;
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Pulse {
@@ -121,6 +121,7 @@ impl State {
         State { elements }
     }
 
+    #[allow(dead_code)]
     fn get(&self, s: &str) -> Option<&ElementState> {
         self.elements.get(s)
     }

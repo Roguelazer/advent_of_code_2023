@@ -1,3 +1,4 @@
+use crate::dimval::DimVal;
 use std::cmp::Ordering;
 use std::fmt;
 
@@ -7,37 +8,18 @@ pub enum Rotation {
     Mirror,
 }
 
-pub trait DimVal:
-    num_traits::Signed
-    + num_traits::ToPrimitive
-    + num_traits::identities::Zero
-    + std::cmp::Ord
-    + std::cmp::Eq
-    + Clone
-    + Copy
-    + std::fmt::Display
-    + std::fmt::Debug
-{
-}
-
-impl<
-        S: num_traits::Signed
-            + num_traits::ToPrimitive
-            + num_traits::identities::Zero
-            + std::cmp::Ord
-            + std::cmp::Eq
-            + Clone
-            + Copy
-            + std::fmt::Display
-            + std::fmt::Debug,
-    > DimVal for S
-{
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash, PartialOrd)]
 pub struct Point<I: DimVal = i64> {
     pub x: I,
     pub y: I,
+}
+
+impl<I: DimVal + Eq> Eq for Point<I> {}
+
+impl<I: DimVal + Ord> Ord for Point<I> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
 }
 
 impl<I: DimVal> Point<I> {
@@ -51,10 +33,6 @@ impl<I: DimVal> Point<I> {
 
     pub fn transpose(&self) -> Self {
         Point::new(self.y, self.x)
-    }
-
-    pub fn line_to(&self, other: Point<I>) -> impl Iterator<Item = Point<I>> {
-        LineToIter::new(*self, other)
     }
 
     pub fn manhattan_distance_to(&self, other: Point<I>) -> usize {
@@ -71,6 +49,12 @@ impl<I: DimVal> Point<I> {
             Rotation::CCW => Point::new(self.y, neg_one * self.x),
             Rotation::CW => Point::new(neg_one * self.y, self.x),
         }
+    }
+}
+
+impl<I: DimVal + Ord> Point<I> {
+    pub fn line_to(&self, other: Point<I>) -> impl Iterator<Item = Point<I>> {
+        LineToIter::new(*self, other)
     }
 }
 
@@ -121,7 +105,7 @@ struct LineToIter<I: DimVal> {
     done: bool,
 }
 
-impl<I: DimVal> LineToIter<I> {
+impl<I: DimVal + Ord> LineToIter<I> {
     fn new(start: Point<I>, end: Point<I>) -> Self {
         debug_assert!(start.x == end.x || start.y == end.y);
         let zero = I::zero();

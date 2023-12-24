@@ -82,6 +82,7 @@ impl Block {
     }
 }
 
+#[allow(dead_code)]
 struct Problem {
     blocks: BTreeMap<usize, Block>,
     occlusion: petgraph::graph::DiGraph<usize, ()>,
