@@ -48,21 +48,23 @@ fn stoer_wagner(g: &GTy) -> Vec<BTreeSet<String>> {
     for i in 0..(n - 1) {
         let mut u = scratch.node_indices().next().unwrap();
         let mut a = [u].into_iter().collect::<BTreeSet<_>>();
-        let mut h = std::collections::BTreeMap::new();
-        for edge in scratch.edges(u) {
-            let weight = edge.weight();
-            let neighbor = if edge.source() == u {
-                edge.target()
-            } else {
-                edge.source()
-            };
-            h.insert(neighbor, *weight);
-        }
+        let mut h = scratch
+            .edges(u)
+            .map(|edge| {
+                let weight = edge.weight();
+                let neighbor = if edge.source() == u {
+                    edge.target()
+                } else {
+                    edge.source()
+                };
+                (neighbor, *weight)
+            })
+            .collect::<mut_binary_heap::BinaryHeap<_, _>>();
         let n = scratch.node_count();
         while a.len() < n - 1 {
             // pretend it's a fucked-up heap
-            u = *h.iter().max_by_key(|(_, v)| *v).map(|(k, _)| k).unwrap();
-            let _ = h.remove(&u).unwrap();
+            let (nu, _) = h.pop_with_key().unwrap();
+            u = nu;
             a.insert(u);
             for e in scratch.edges(u) {
                 let n = if e.source() == u {
@@ -71,27 +73,36 @@ fn stoer_wagner(g: &GTy) -> Vec<BTreeSet<String>> {
                     e.source()
                 };
                 if !a.contains(&n) {
-                    *h.entry(n).or_insert(0) += *e.weight();
+                    // too bad there's no .entry...
+                    let updated = if let Some(ref mut r) = h.get_mut(&n) {
+                        **r += *e.weight();
+                        true
+                    } else {
+                        false
+                    };
+                    if !updated {
+                        h.push(n, *e.weight());
+                    }
                 }
             }
         }
-        if let Some((v, w)) = h.iter().max_by_key(|(_, v)| *v) {
+        if let Some((v, w)) = h.pop_with_key() {
             if let Some(cv) = cut_value {
-                if *w < cv {
-                    cut_value = Some(*w);
+                if w < cv {
+                    cut_value = Some(w);
                     best_round = Some(i);
                 }
             } else {
-                cut_value = Some(*w);
+                cut_value = Some(w);
                 best_round = Some(i);
             }
             let u_label = scratch.node_weight(u).unwrap().clone();
-            let v_label = scratch.node_weight(*v).unwrap().clone();
+            let v_label = scratch.node_weight(v).unwrap().clone();
             contractions.push((u_label, v_label));
             let mut to_change = vec![];
             let mut to_add = vec![];
-            for edge in scratch.edges(*v) {
-                let peer = if edge.source() == *v {
+            for edge in scratch.edges(v) {
+                let peer = if edge.source() == v {
                     edge.target()
                 } else {
                     edge.source()
@@ -111,7 +122,7 @@ fn stoer_wagner(g: &GTy) -> Vec<BTreeSet<String>> {
             for (peer, weight) in to_add {
                 scratch.add_edge(u, peer, weight);
             }
-            scratch.remove_node(*v);
+            scratch.remove_node(v);
         } else {
             panic!("uh oh");
         }
